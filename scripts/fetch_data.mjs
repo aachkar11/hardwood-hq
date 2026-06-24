@@ -193,15 +193,10 @@ async function run() {
   let allRows = [];
   let calls = 1;
   for (const t of teams) {
-    let page = 1, totalPages = 1;
-    do {
-      const body = await apiGet(`/players/statistics?team=${t.id}&season=${season}&page=${page}`);
-      calls++;
-      allRows = allRows.concat(body.response || []);
-      totalPages = body.paging?.total || 1;
-      page++;
-      await sleep(DELAY_MS);
-    } while (page <= totalPages && page <= MAX_PAGES_PER_TEAM);
+    const body = await apiGet(`/players/statistics?team=${t.id}&season=${season}`);
+    calls++;
+    allRows = allRows.concat(body.response || []);
+    await sleep(DELAY_MS);
   }
   console.log(`Pulled ${allRows.length} game-stat rows in ${calls} requests.`);
 
