@@ -6,6 +6,7 @@ import {
   Plus, X, TrendingUp, Shield, Zap, Target, DollarSign,
   Users, BarChart3, GitCompare, Lightbulb, AlertTriangle, ChevronRight,
 } from "lucide-react";
+import realPlayers from "./players.json"; // filled nightly by scripts/fetch_data.mjs
 
 /* ============================================================
    HARDWOOD HQ — front-office analytics terminal (prototype)
@@ -179,7 +180,11 @@ function Stat({ label, v, accent }) {
 
 /* ============================================================ */
 export default function HardwoodHQ() {
-  const league = useMemo(() => genLeague(), []); // ROSTER_SOURCE: replace with live data here
+  const league = useMemo(
+    () => (Array.isArray(realPlayers) && realPlayers.length ? realPlayers : genLeague()),
+    []
+  ); // ROSTER_SOURCE: real data arrives via src/players.json; synthetic is the fallback
+  const usingRealData = Array.isArray(realPlayers) && realPlayers.length > 0;
   const [rosterIds, setRosterIds] = useState(() => league.slice(2, 11).map((p) => p.id));
   const [tab, setTab] = useState("build");
   const [cmp, setCmp] = useState([league[0].id, league[5].id]);
@@ -229,7 +234,8 @@ export default function HardwoodHQ() {
           </div>
         </div>
         <div style={{ fontSize: 10, color: C.faint, letterSpacing: 1, textAlign: "right" }}>
-          SAMPLE DATA · {league.length} players<br />swap in live feed at ROSTER_SOURCE
+          {usingRealData ? "LIVE DATA" : "SAMPLE DATA"} · {league.length} players<br />
+          {usingRealData ? "grades & salaries estimated from box stats" : "swap in live feed at ROSTER_SOURCE"}
         </div>
       </div>
 
@@ -302,7 +308,9 @@ export default function HardwoodHQ() {
       </div>
 
       <div style={{ padding: "20px 16px 40px", maxWidth: 1080, margin: "0 auto", fontSize: 11, color: C.faint, lineHeight: 1.6, borderTop: `1px solid ${C.line}` }}>
-        <strong style={{ color: C.muted }}>How the numbers work:</strong> each player carries box-plus-minus-style offensive/defensive impact ratings. Team net rating is the minutes-weighted sum of those ratings; projected wins map from net rating at ~2.7 wins per point. Empty rotation minutes are filled at replacement level. Cap lines default to 2025-26 figures and are fully editable. All player data here is synthetic — point <code style={{ color: C.amber }}>ROSTER_SOURCE</code> at a live feed (nba_api / BALLDONTLIE for stats, Spotrac for contracts) to make it real.
+        <strong style={{ color: C.muted }}>How the numbers work:</strong> each player carries box-plus-minus-style offensive/defensive impact ratings. Team net rating is the minutes-weighted sum of those ratings; projected wins map from net rating at ~2.7 wins per point. Empty rotation minutes are filled at replacement level. Cap lines default to 2025-26 figures and are fully editable. {usingRealData
+          ? "Players and per-game stats are real (BALLDONTLIE); grades, impact ratings, and salaries are estimated from those box stats."
+          : "All player data here is synthetic — it switches to real NBA data automatically once the nightly fetch runs."}
       </div>
     </div>
   );
@@ -349,7 +357,7 @@ function RosterRow({ p, drop, dim }) {
           <span style={{ fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
           <PosTag pos={p.pos} />
         </div>
-        <div style={{ fontSize: 11, color: C.faint }}>{p.arch} · {p.age}y · ${p.salary}M</div>
+        <div style={{ fontSize: 11, color: C.faint }}>{p.arch}{p.age ? ` · ${p.age}y` : ""} · ${p.salary}M</div>
       </div>
       <div style={{ display: "flex", gap: 14 }}>
         <Stat label="PTS" v={p.pts} />
@@ -457,7 +465,7 @@ function CompareCard({ p, color }) {
   return (
     <div style={{ background: C.panel, border: `1px solid ${C.line}`, borderTop: `2px solid ${color}`, borderRadius: 10, padding: 12 }}>
       <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{p.name}</div>
-      <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>{p.arch} · {p.pos} · {p.age}y · ${p.salary}M</div>
+      <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>{p.arch} · {p.pos}{p.age ? ` · ${p.age}y` : ""} · ${p.salary}M</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
         <Stat label="GRD" v={p.grade} accent={color} />
         <Stat label="PTS" v={p.pts} />

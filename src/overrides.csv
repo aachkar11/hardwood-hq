@@ -1,0 +1,10 @@
+# OPTIONAL — real salaries & advanced metrics, merged on top of the API data.
+# How to fill this (free, allowed for personal use):
+#   1. On a Basketball Reference stats or contracts table, click
+#      "Share & Export" -> "Get table as CSV".
+#   2. Paste rows below as: name,salary,obpm,dbpm
+#      - salary is in millions (e.g. 51.2). obpm/dbpm are optional.
+#      - leave any cell blank to keep the estimate for that field.
+#   3. Commit this file. The next data refresh merges it automatically.
+# Keep the header line below. Delete these comments anytime.
+name,salary,obpm,dbpm
