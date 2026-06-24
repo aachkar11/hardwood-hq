@@ -21,9 +21,11 @@ const KEY = process.env.BDL_API_KEY; // secret name kept as-is; holds your API-S
 const MAX_PAGES_PER_TEAM = 2;        // page cap to stay under the daily request budget (~61 calls)
 const DELAY_MS = 6500;               // ~9 calls/min, safely under the free per-minute limit
 
+const FREE_MAX_SEASON = 2024;        // API-Sports free plan covers seasons 2022–2024
 function currentSeason() {
   const d = new Date();
-  return d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1; // 2025-26 -> 2025
+  const s = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+  return Math.min(s, FREE_MAX_SEASON); // use current season, but never past the free cap
 }
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -93,7 +95,10 @@ function applyOverrides(players) {
   const path = "src/overrides.csv";
   if (!existsSync(path)) return { players, count: 0 };
   const rows = parseCSV(readFileSync(path, "utf8"));
-  const byName = new Map(rows.filter((r) => r.name).map((r) => [normName(r.name), r]));
+  // accept either our simple format (name,salary,obpm,dbpm) OR a full
+  // Basketball Reference advanced-stats CSV export (Player,…,OBPM,DBPM,…)
+  const getName = (r) => r.name || r.player || "";
+  const byName = new Map(rows.filter((r) => getName(r)).map((r) => [normName(getName(r)), r]));
   let count = 0;
   for (const p of players) {
     const o = byName.get(normName(p.name));
@@ -101,8 +106,8 @@ function applyOverrides(players) {
     if (o.salary !== undefined && o.salary !== "") { p.salary = +o.salary; p.salaryReal = true; }
     const hasAdv = (o.obpm !== undefined && o.obpm !== "") || (o.dbpm !== undefined && o.dbpm !== "");
     if (hasAdv) {
-      if (o.obpm !== "") p.obpm = +o.obpm;
-      if (o.dbpm !== "") p.dbpm = +o.dbpm;
+      if (o.obpm !== undefined && o.obpm !== "") p.obpm = +o.obpm;
+      if (o.dbpm !== undefined && o.dbpm !== "") p.dbpm = +o.dbpm;
       p.bpm = r1(p.obpm + p.dbpm);
       p.grade = clamp(Math.round(62 + p.bpm * 3.4), 30, 99);
       p.advReal = true;
